@@ -18,7 +18,6 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         uint256 totalRewards;
         uint256 lastRewardTime;
     }
-
     /*                   */
     /*  STATE VARIABLES  */
     /*                   */
