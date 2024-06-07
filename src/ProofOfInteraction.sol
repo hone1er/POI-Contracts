@@ -96,14 +96,18 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
      * @dev Sends an ice breaker fee to the treasury and emits an event
      */
     function sendIceBreaker(address _invitee) external nonReentrant {
+        require(
+            i_blueToken.balanceOf(msg.sender) >= iceBreakerFee,
+            "Insufficient balance"
+        );
+
         bool success = i_blueToken.transferFrom(
             msg.sender,
             s_treasury,
             iceBreakerFee
         );
-        if (!success) {
-            revert IceBreakerFeeError();
-        }
+        require(success, "Transfer failed");
+
         emit IceBreakerSent(msg.sender, _invitee);
     }
 
@@ -208,6 +212,14 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         address _user
     ) public view returns (uint256) {
         return userRewards[_user].lastRewardTime;
+    }
+
+    /**
+     *
+     * @return ice breaker fee
+     */
+    function getIceBreakerFee() public view returns (uint256) {
+        return iceBreakerFee;
     }
 
     /**

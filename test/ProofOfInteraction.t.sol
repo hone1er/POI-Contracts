@@ -28,16 +28,16 @@ contract ProofOfInteractionTest is Test {
 
         // Allocate some tokens to the user and the treasury
         blueToken.mint(user, 1000e18);
-        blueToken.mint(treasury, 2000000000e18);
+        blueToken.mint(treasury, 200000e18);
 
         // Approve the ProofOfInteraction contract to spend tokens on behalf of the user
         vm.prank(user);
-        blueToken.approve(address(proofOfInteraction), 2000000000e18);
+        blueToken.approve(address(proofOfInteraction), 200000e18);
         vm.stopPrank();
 
         // Approve the ProofOfInteraction contract to spend tokens on behalf of the treasury
         vm.prank(treasury);
-        blueToken.approve(address(proofOfInteraction), 2000000000e18);
+        blueToken.approve(address(proofOfInteraction), 200000e18);
         vm.stopPrank();
     }
 
@@ -64,9 +64,14 @@ contract ProofOfInteractionTest is Test {
 
     function testSendIceBreaker() public {
         // Simulate the user sending an ice breaker to the invitee
-        vm.prank(user);
+        uint256 iceBreakerFee = proofOfInteraction.iceBreakerFee();
+
+        uint256 userInitialBalance = blueToken.balanceOf(user);
         uint256 treasuryInitialBalance = blueToken.balanceOf(treasury);
 
+        blueToken.approve(address(proofOfInteraction), 1000e18);
+
+        vm.prank(user);
         proofOfInteraction.sendIceBreaker(invitee);
 
         // Check the treasury's balance
@@ -79,7 +84,11 @@ contract ProofOfInteractionTest is Test {
 
         // Check the user's balance
         uint256 userBalance = blueToken.balanceOf(user);
-        assertEq(userBalance, 999e18, "User should have 999 tokens left");
+        assertEq(
+            userBalance,
+            userInitialBalance - iceBreakerFee,
+            "User should have correct balance after sending ice breaker"
+        );
 
         console.log("User's balance:", userBalance);
         console.log("Treasury's balance:", treasuryBalance);
