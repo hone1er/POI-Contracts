@@ -24,7 +24,7 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     /*                   */
     IERC20 immutable i_blueToken;
 
-    uint256 public rewardRate;
+    uint256 public baseRewardRate;
     uint256 public iceBreakerFee;
     uint256 public minimumRewardInterval;
 
@@ -66,13 +66,13 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     /*             */
     constructor(
         address initialOwner,
-        uint256 _rewardRate,
+        uint256 _baseRewardRate,
         uint256 _iceBreakerFee,
         uint256 _minimumRewardInterval,
         address _blueToken
     ) Ownable(initialOwner) {
         iceBreakerFee = _iceBreakerFee;
-        rewardRate = _rewardRate;
+        baseRewardRate = _baseRewardRate;
         minimumRewardInterval = _minimumRewardInterval;
         i_blueToken = IERC20(_blueToken);
     }
@@ -169,7 +169,7 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
             keccak256(abi.encodePacked(addr1, addr2))
         );
         uint256 interactionCount = userInteractions[hashedAddresses];
-        return rewardRate / (1 + interactionCount);
+        return baseRewardRate / (1 + interactionCount);
     }
 
     /**
@@ -203,11 +203,11 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
 
     /**
      *
-     * @param _rewardRate new reward rate
+     * @param _baseRewardRate new reward rate
      * @dev Sets the reward rate
      */
-    function setRewardRate(uint256 _rewardRate) public onlyOwner {
-        rewardRate = _rewardRate;
+    function setBaseRewardRate(uint256 _baseRewardRate) public onlyOwner {
+        baseRewardRate = _baseRewardRate;
     }
 
     /**
