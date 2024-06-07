@@ -16,7 +16,8 @@ contract DeployPOIRewards is Script {
             uint256 _rewardRate,
             uint256 _iceBreakerFee,
             uint256 _minimumRewardInterval,
-            address _blueToken
+            address _blueToken,
+            address _treasury
         ) = helperConfig.activeNetworkConfig();
 
         vm.startBroadcast();
@@ -25,7 +26,8 @@ contract DeployPOIRewards is Script {
             _rewardRate,
             _iceBreakerFee,
             _minimumRewardInterval,
-            _blueToken
+            _blueToken,
+            _treasury
         );
         vm.stopBroadcast();
 

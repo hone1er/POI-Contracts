@@ -22,6 +22,7 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     /*  STATE VARIABLES  */
     /*                   */
     IERC20 immutable i_blueToken;
+    address private s_treasury;
 
     uint256 public baseRewardRate;
     uint256 public iceBreakerFee;
@@ -63,17 +64,30 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     /*             */
     /*  FUNCTIONS  */
     /*             */
+
+    /**
+     *
+     * @param initialOwner address of the owner of the contract
+     * @param _baseRewardRate reward rate for the users
+     * @param _iceBreakerFee fee to send an ice breaker
+     * @param _minimumRewardInterval minimum time interval between rewards
+     * @param _blueToken address of the BLUE token
+     * @param _treasury address of the treasury
+     * @dev Constructor for the ProofOfInteraction contract
+     */
     constructor(
         address initialOwner,
         uint256 _baseRewardRate,
         uint256 _iceBreakerFee,
         uint256 _minimumRewardInterval,
-        address _blueToken
+        address _blueToken,
+        address _treasury
     ) Ownable(initialOwner) {
         iceBreakerFee = _iceBreakerFee;
         baseRewardRate = _baseRewardRate;
         minimumRewardInterval = _minimumRewardInterval;
         i_blueToken = IERC20(_blueToken);
+        s_treasury = _treasury;
     }
 
     /**
@@ -84,7 +98,7 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     function sendIceBreaker(address _invitee) external nonReentrant {
         bool success = i_blueToken.transferFrom(
             msg.sender,
-            address(this),
+            s_treasury,
             iceBreakerFee
         );
         if (!success) {
@@ -104,9 +118,9 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         address _userB
     ) external onlyOwner nonReentrant {
         uint256 rewardValue = calculateRewards(_userA, _userB);
+        incrementInteractionCount(_userA, _userB);
         rewardUser(_userA, rewardValue);
         rewardUser(_userB, rewardValue);
-        incrementInteractionCount(_userA, _userB);
     }
 
     /**
@@ -121,13 +135,15 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         uint256 _rewardValue
     ) internal onlyAfterRewardInterval(_user) {
         bool success = i_blueToken.transferFrom(
-            address(this),
+            s_treasury,
             _user,
             _rewardValue
         );
         if (!success) {
             revert RewardTransferFailedError();
         }
+        userRewards[_user].totalRewards += _rewardValue;
+        userRewards[_user].lastRewardTime = block.timestamp;
         emit RewardUser(_user, _rewardValue);
     }
 
@@ -168,6 +184,9 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
             keccak256(abi.encodePacked(addr1, addr2))
         );
         uint256 interactionCount = userInteractions[hashedAddresses];
+        if (interactionCount == 0) {
+            return baseRewardRate;
+        }
         return baseRewardRate / (1 + interactionCount);
     }
 
@@ -218,6 +237,14 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         uint256 _minimumRewardInterval
     ) public onlyOwner {
         minimumRewardInterval = _minimumRewardInterval;
+    }
+
+    /**
+     * @param _treasury address of the treasury
+     * @dev set the treasury address
+     */
+    function setTreasury(address _treasury) public onlyOwner {
+        s_treasury = _treasury;
     }
 
     /**

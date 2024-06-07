@@ -13,6 +13,7 @@ contract HelperConfig is Script {
         uint256 _iceBreakerFee;
         uint256 _minimumRewardInterval;
         address _blueToken;
+        address _treasury;
     }
 
     constructor() {
@@ -29,11 +30,12 @@ contract HelperConfig is Script {
         returns (NetworkConfig memory sepoliaNetworkConfig)
     {
         sepoliaNetworkConfig = NetworkConfig({
-            initialOwner: 0x54eB82E4Ec25eb173E1668dd5aB0943904d87331,
+            initialOwner: 0x0000000000000000000000000000000000000000,
             _rewardRate: 10e18,
             _iceBreakerFee: 1e18,
             _minimumRewardInterval: 1 days,
-            _blueToken: 0x999B45BB215209e567FaF486515af43b8353e393
+            _blueToken: 0x0000000000000000000000000000000000000000,
+            _treasury: 0x0000000000000000000000000000000000000000
         });
     }
 
@@ -58,7 +60,8 @@ contract HelperConfig is Script {
             _rewardRate: 10e18,
             _iceBreakerFee: 1e18,
             _minimumRewardInterval: 1 minutes,
-            _blueToken: address(blueToken)
+            _blueToken: address(blueToken),
+            _treasury: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
         });
     }
 }
