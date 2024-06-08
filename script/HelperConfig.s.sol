@@ -26,7 +26,7 @@ contract HelperConfig is Script {
 
     function getSepoliaBaseConfig() public pure returns (NetworkConfig memory sepoliaNetworkConfig) {
         sepoliaNetworkConfig = NetworkConfig({
-            initialOwner: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
+            initialOwner: 0x0000000000000000000000000000000000000000,
             _rewardRate: 10e18,
             _iceBreakerFee: 1e18,
             _minimumRewardInterval: 1 days,
