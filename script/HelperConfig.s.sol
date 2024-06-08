@@ -24,13 +24,9 @@ contract HelperConfig is Script {
         }
     }
 
-    function getSepoliaBaseConfig()
-        public
-        pure
-        returns (NetworkConfig memory sepoliaNetworkConfig)
-    {
+    function getSepoliaBaseConfig() public pure returns (NetworkConfig memory sepoliaNetworkConfig) {
         sepoliaNetworkConfig = NetworkConfig({
-            initialOwner: 0x0000000000000000000000000000000000000000,
+            initialOwner: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,
             _rewardRate: 10e18,
             _iceBreakerFee: 1e18,
             _minimumRewardInterval: 1 days,
@@ -39,10 +35,7 @@ contract HelperConfig is Script {
         });
     }
 
-    function getOrCreateAnvilEthConfig()
-        public
-        returns (NetworkConfig memory anvilNetworkConfig)
-    {
+    function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory anvilNetworkConfig) {
         // Check to see if we set an active network config
         if (activeNetworkConfig.initialOwner != address(0)) {
             return activeNetworkConfig;
