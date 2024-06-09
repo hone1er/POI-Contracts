@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
-import {ConfirmedOwner} from "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
-import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
+import {FunctionsClient} from "lib/chainlink/contracts/src/v0.8/functions/v1_0_0/FunctionsClient.sol";
+import {ConfirmedOwner} from "lib/chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import {FunctionsRequest} from "lib/chainlink/contracts/src/v0.8/functions/v1_0_0/libraries/FunctionsRequest.sol";
 import {ProofOfInteraction} from "./ProofOfInteraction.sol";
+
 /**
  * Request testnet LINK and ETH here: https://faucets.chain.link/
  * Find information on LINK Token Contracts and get the latest ETH and LINK faucets here: https://docs.chain.link/resources/link-token-contracts/
@@ -23,12 +24,18 @@ contract BlueSocialConsumer is FunctionsClient, ConfirmedOwner {
     bytes public s_lastResponse;
     bytes public s_lastError;
     bytes public encryptedSecretsUrls;
+    ProofOfInteraction public proofOfInteraction;
     // Custom error type
 
     error UnexpectedRequestID(bytes32 requestId);
 
     // Event to log responses
-    event Response(bytes32 indexed requestId, uint256 amount, bytes response, bytes err);
+    event Response(
+        bytes32 indexed requestId,
+        uint256 amount,
+        bytes response,
+        bytes err
+    );
 
     // Router address - Hardcoded for Sepolia
     // Check to get the router address for your supported network https://docs.chain.link/chainlink-functions/supported-networks
@@ -37,9 +44,16 @@ contract BlueSocialConsumer is FunctionsClient, ConfirmedOwner {
     // JavaScript source code
     // Fetch character name from the Star Wars API.
     // Documentation: https://swapi.info/people
-    string source = "const userId = args[0];" "const apiResponse = await Functions.makeHttpRequest({"
-        "  url: `https://swapi.info/api/people/${userId}/`" "});" "if (apiResponse.error) {"
-        "  console.error(apiResponse.error);" "  throw Error('Request failed');" "}" "const { data } = apiResponse;"
+    string source =
+        "const userId = args[0];"
+        "const apiResponse = await Functions.makeHttpRequest({"
+        "  url: `https://swapi.info/api/people/${userId}/`"
+        "});"
+        "if (apiResponse.error) {"
+        "  console.error(apiResponse.error);"
+        "  throw Error('Request failed');"
+        "}"
+        "const { data } = apiResponse;"
         "return Functions.encodeUint256(1000000000000000000);";
 
     //Callback gas limit
@@ -47,7 +61,8 @@ contract BlueSocialConsumer is FunctionsClient, ConfirmedOwner {
 
     // donID - Hardcoded for Sepolia
     // Check to get the donID for your supported network https://docs.chain.link/chainlink-functions/supported-networks
-    bytes32 donID = 0x66756e2d626173652d7365706f6c69612d310000000000000000000000000000;
+    bytes32 donID =
+        0x66756e2d626173652d7365706f6c69612d310000000000000000000000000000;
 
     /**
      * @notice Initializes the contract with the Chainlink router address and sets the contract owner
@@ -60,11 +75,10 @@ contract BlueSocialConsumer is FunctionsClient, ConfirmedOwner {
      * @param args The arguments to pass to the HTTP request
      * @return requestId The ID of the request
      */
-    function sendRequest(uint64 subscriptionId, string[] calldata args)
-        external
-        onlyOwner
-        returns (bytes32 requestId)
-    {
+    function sendRequest(
+        uint64 subscriptionId,
+        string[] calldata args
+    ) external onlyOwner returns (bytes32 requestId) {
         FunctionsRequest.Request memory req;
         req.initializeRequestForInlineJavaScript(source); // Initialize the request with JS code
         if (encryptedSecretsUrls.length > 0) {
@@ -73,7 +87,12 @@ contract BlueSocialConsumer is FunctionsClient, ConfirmedOwner {
         if (args.length > 0) req.setArgs(args); // Set the arguments for the request
 
         // Send the request and store the request ID
-        s_lastRequestId = _sendRequest(req.encodeCBOR(), subscriptionId, gasLimit, donID);
+        s_lastRequestId = _sendRequest(
+            req.encodeCBOR(),
+            subscriptionId,
+            gasLimit,
+            donID
+        );
 
         return s_lastRequestId;
         // use use mapping to store the requestid request[requestid] = user address
@@ -85,7 +104,11 @@ contract BlueSocialConsumer is FunctionsClient, ConfirmedOwner {
      * @param response The HTTP response data
      * @param err Any errors from the Functions request
      */
-    function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
+    function fulfillRequest(
+        bytes32 requestId,
+        bytes memory response,
+        bytes memory err
+    ) internal override {
         if (s_lastRequestId != requestId) {
             revert UnexpectedRequestID(requestId); // Check if request IDs match
         }
@@ -101,6 +124,7 @@ contract BlueSocialConsumer is FunctionsClient, ConfirmedOwner {
         s_lastError = err;
 
         //call function from POI contract passing in the request id and amount to pay user, from request id, get user address
+        proofOfInteraction.rewardUsers(requestId);
 
         // Emit an event to log the response
         emit Response(requestId, amount, s_lastResponse, s_lastError);
