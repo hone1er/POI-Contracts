@@ -44,7 +44,11 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     /*        */
     /* EVENTS */
     /*        */
-    event TipSent(address indexed user, uint256 amount);
+    event TipSent(
+        address indexed sender,
+        address indexed receiver,
+        uint256 amount
+    );
     event RewardUser(address indexed user, uint256 reward);
     event BalanceWithdrawn(address indexed owner, uint256 amount);
     event IceBreakerSent(address indexed user, address indexed invitee);
@@ -55,6 +59,7 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     error RewardTransferFailedError();
     error RewardIntervalError();
     error IceBreakerFeeError();
+    error OnlyConsumerError();
     error InteractionError();
     error TipUserError();
 
@@ -73,10 +78,9 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     }
 
     modifier onlyConsumer() {
-        require(
-            msg.sender == s_blueSocialConsumer,
-            "Only the BlueSocialConsumer contract can call this function"
-        );
+        if (msg.sender != s_blueSocialConsumer) {
+            revert OnlyConsumerError();
+        }
         _;
     }
 
@@ -92,6 +96,8 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
      * @param _minimumRewardInterval minimum time interval between rewards
      * @param _blueToken address of the BLUE token
      * @param _treasury address of the treasury
+     * @param _blueSocialConsumer address of the BlueSocialConsumer contract
+     * @param _chainlinkSubscriptionId chainlink subscription id
      * @dev Constructor for the ProofOfInteraction contract
      */
     constructor(
@@ -134,6 +140,13 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         emit IceBreakerSent(msg.sender, _invitee);
     }
 
+    /**
+     *
+     * @param _userA address of the first user in the interaction
+     * @param _userB address of the second user in the interaction
+     * @param _callData chainlink request data
+     * @dev Calls the BlueSocialConsumer contract to send a chainlink request
+     */
     function callConsumer(
         address _userA,
         address _userB,
@@ -160,7 +173,7 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
      * @dev Rewards multiple users with the reward rate
      *
      */
-    function rewardUsers(bytes32 _callData) external nonReentrant {
+    function rewardUsers(bytes32 _callData) external nonReentrant onlyConsumer {
         InteractionParticipants memory interactionParticipants = requests[
             _callData
         ];
@@ -230,9 +243,14 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         if (!success) {
             revert TipUserError();
         }
-        emit TipSent(_user, _amount);
+        emit TipSent(msg.sender, _user, _amount);
     }
 
+    /**
+     * @param _userA address of the first user
+     * @param _userB address of the second user
+     * @return hashed addresses
+     */
     function hashAddresses(
         address _userA,
         address _userB
@@ -246,6 +264,11 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         return hashedAddresses;
     }
 
+    /**
+     * @param _userA address of the first user
+     * @param _userB address of the second user
+     * @dev Increments the interaction count between two users
+     */
     function incrementInteractionCount(address _userA, address _userB) public {
         // sort the addresses to avoid duplicate counts
         // Ensure the addresses are sorted to avoid duplicates
@@ -253,16 +276,17 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
         userInteractions[hashedAddresses].interactionCount++;
     }
 
+    /**
+     *
+     * @param _userA address of the first user
+     * @param _userB address of the second user
+     * @return reward value for the users
+     */
     function calculateRewards(
         address _userA,
         address _userB
     ) public view returns (uint256) {
-        (address addr1, address addr2) = _userA < _userB
-            ? (_userA, _userB)
-            : (_userB, _userA);
-        uint256 hashedAddresses = uint256(
-            keccak256(abi.encodePacked(addr1, addr2))
-        );
+        uint256 hashedAddresses = hashAddresses(_userA, _userB);
         uint256 interactionCount = userInteractions[hashedAddresses]
             .interactionCount;
         if (interactionCount == 0) {
@@ -274,9 +298,10 @@ contract ProofOfInteraction is Ownable, ReentrancyGuard {
     /**
      *
      * @param _userA address of the user to get the last reward time for
+     * @param _userB address of the other user in the interaction
      * @return last reward time for the user
      */
-    function getUserLastRewardTime(
+    function getLastRewardTime(
         address _userA,
         address _userB
     ) public view returns (uint256) {

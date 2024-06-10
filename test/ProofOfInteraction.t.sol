@@ -134,12 +134,14 @@ contract ProofOfInteractionTest is Test {
         console.log("User's balance:", userBalance);
         console.log("Invitee's balance:", inviteeBalance);
 
-        uint256 userLastRewardTime = proofOfInteraction.getUserLastRewardTime(
+        uint256 userLastRewardTime = proofOfInteraction.getLastRewardTime(
             user,
             invitee
         );
-        uint256 inviteeLastRewardTime = proofOfInteraction
-            .getUserLastRewardTime(invitee, user);
+        uint256 inviteeLastRewardTime = proofOfInteraction.getLastRewardTime(
+            invitee,
+            user
+        );
         assertEq(
             userLastRewardTime,
             block.timestamp,
